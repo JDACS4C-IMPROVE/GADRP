@@ -34,8 +34,8 @@ lr = 0.0001
 num_epoch =150
 batch_size =1024
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-device = torch.device("cuda:1" if (torch.cuda.is_available()) else "cpu")
+# os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+device = torch.device("cuda" if (torch.cuda.is_available()) else "cpu")
 def data_process():
     # load molecular substructure fingerprints of drugs
     fingerprint = pd.read_csv(drug_fingerprint_file, sep=',', header=0, index_col=[0])

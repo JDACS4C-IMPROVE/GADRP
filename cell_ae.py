@@ -17,7 +17,7 @@ cell_copynumber_file = "./data/cell_line/copynumber_461cell_23316dim.csv"
 cell_RNAseq_ae="./data/cell_line/cell_RNAseq400_ae.pt"
 cell_copynumber_ae="./data/cell_line/cell_copynumber400_ae.pt"
 device="cuda"
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+# os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 def train_ae(model,trainLoader,test_feature):
     start = datetime.datetime.now()

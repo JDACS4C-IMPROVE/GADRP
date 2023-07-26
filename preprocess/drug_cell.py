@@ -45,7 +45,7 @@ def sym_adj(adj):
 
 def main():
     device = "cuda"
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
     #药物和细胞系的相似性矩阵
     drug_sim=torch.load(drug_sim_file).to(device)

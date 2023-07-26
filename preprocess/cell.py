@@ -15,8 +15,8 @@ cell_CpG_file = '../data/cell_line/CpG_407cell_69641dim.csv'
 cell_id_file="../data/cell_line/cell_index.csv"
 cell_sim_file="../data/cell_line/cell_sim.pt"
 cell_sim_top10_file="../data/cell_line/cell_sim_top10.pt"
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
-device = torch.device("cuda:3" if (torch.cuda.is_available()) else "cpu")
+# os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+device = torch.device("cuda" if (torch.cuda.is_available()) else "cpu")
 
 
 def main():
