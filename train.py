@@ -143,7 +143,7 @@ def main():
 
 
     # Stratified sampling
-    train_index_all, test_index_all=split(drug_cell_label,cell_num=388)
+    train_index_all, test_index_all=split(drug_cell_label,cell_num=len(cell_index))
 
     for i in range(5):
         train_index=train_index_all[i]

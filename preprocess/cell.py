@@ -60,8 +60,9 @@ def main():
     cell_sim=(miRNA_sim + CpG_sim)/2
 
 
-    cell_sim_top10 = torch.zeros(size=(388, 10), dtype=torch.int).to(device)
-    for i in range(388):
+    cell_num = cell_id_set.shape[0]
+    cell_sim_top10 = torch.zeros(size=(cell_num, 10), dtype=torch.int).to(device)
+    for i in range(cell_num):
         celli_list = list(cell_sim[i])
         cell_sim_top10[i] = torch.tensor(list(map(celli_list.index, heapq.nlargest(10, celli_list))),
                                          dtype=torch.int)

@@ -81,8 +81,8 @@ def main():
     cell_sim_top10_indexlist = cell_sim_top10_indexlist[list_cell].to(device)
     drug_cell_sim_index = drug_sim_top10_indexlist*cell_num + cell_sim_top10_indexlist
 
-    drug_j = (drug_cell_sim_index // 388).long()
-    cell_j = (drug_cell_sim_index % 388).long()
+    drug_j = (drug_cell_sim_index // cell_num).long()
+    cell_j = (drug_cell_sim_index % cell_num).long()
     drug_i = torch.zeros_like(drug_j)
     cell_i = torch.zeros_like(cell_j)
     drug_i[:, :] = list_drug.reshape(-1, 1).long()
