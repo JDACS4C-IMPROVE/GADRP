@@ -7,24 +7,19 @@ from sklearn.preprocessing import MinMaxScaler
 from scipy.stats import pearsonr
 import torch
 import heapq
+import candle
+from tqdm import tqdm
 
-
-
-cell_miRNA_file = '../data/cell_line/miRNA_470cell_734dim.csv'
-cell_CpG_file = '../data/cell_line/CpG_407cell_69641dim.csv'
-cell_id_file="../data/cell_line/cell_index.csv"
-cell_sim_file="../data/cell_line/cell_sim.pt"
-cell_sim_top10_file="../data/cell_line/cell_sim_top10.pt"
-# os.environ["CUDA_VISIBLE_DEVICES"] = "3"
-device = torch.device("cuda" if (torch.cuda.is_available()) else "cpu")
-
-
-def main():
+def preprocess_cell(args):
     """
     caculate cell line similarity matrix
     :return:
     """
-    use_cuda = torch.cuda.is_available()
+    cell_id_file = args.cell_id_file
+    cell_miRNA_file = args.cell_data_files[0]
+    cell_CpG_file = args.cell_data_files[1]
+    cell_sim_file = args.cell_sim_file
+    cell_sim_top10_file = args.cell_sim_top10_file
 
     #load microRNA expression data, DNA methylation data of cell line
     miRNA_feature = pd.read_csv(cell_miRNA_file, sep=',', header=None, index_col=[0])
@@ -47,8 +42,7 @@ def main():
     CpG_sim = torch.zeros(size=(len(CpG_feature), len(CpG_feature)))
 
 
-    for i in range(len(miRNA_feature)):
-        print(i)
+    for i in tqdm(range(len(miRNA_feature))):
         for j in range(len(miRNA_feature)):
             temp_sim = pearsonr(miRNA_feature[i, :], miRNA_feature[j, :])
             miRNA_sim[i][j] = np.abs(temp_sim[0])
@@ -61,7 +55,8 @@ def main():
 
 
     cell_num = cell_id_set.shape[0]
-    cell_sim_top10 = torch.zeros(size=(cell_num, 10), dtype=torch.int).to(device)
+    cell_sim_top10 = torch.zeros(size=(cell_num, 10), dtype=torch.int)
+    _,call_sim_top10_2 = torch.topk(cell_sim, 10, dim=1)
     for i in range(cell_num):
         celli_list = list(cell_sim[i])
         cell_sim_top10[i] = torch.tensor(list(map(celli_list.index, heapq.nlargest(10, celli_list))),
@@ -71,7 +66,20 @@ def main():
     torch.save(cell_sim_top10, cell_sim_top10_file)
 
 
+def main():
+    """Run preprocessing with default values"""
 
+    default_args = {
+        'cell_id_file': "../data/cell_line/cell_index.csv",
+        'cell_data_files': [
+            '../data/cell_line/miRNA_470cell_734dim.csv',
+            '../data/cell_line/CpG_407cell_69641dim.csv'
+        ],
+        'cell_sim_file': "../data/cell_line/cell_sim.pt",
+        'cell_sim_top10_file': "../data/cell_line/cell_sim_top10.pt",
+    }
+
+    preprocess_cell(args = candle.ArgumentStruct(**default_args))
 
 
 if __name__ == '__main__':
