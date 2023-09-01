@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 
 import pandas as pd
@@ -8,6 +6,7 @@ from scipy.stats import pearsonr
 import torch
 import candle
 from tqdm import tqdm
+from args import default_args
 
 def calculate_similarity(id_file, input_files, output_file, output_top10_file):
     """
@@ -73,17 +72,7 @@ def preprocess_cell(args):
 def main():
     """Run preprocessing with default values"""
 
-    default_args = {
-        'cell_id_file': "../data/cell_line/cell_index.csv",
-        'cell_data_files': [
-            '../data/cell_line/miRNA_470cell_734dim_clean.csv',
-            '../data/cell_line/CpG_407cell_69641dim_clean.csv' # Simplifying loading, no header needed
-        ],
-        'cell_sim_file': "../data/cell_line/cell_sim.pt",
-        'cell_sim_top10_file': "../data/cell_line/cell_sim_top10.pt",
-    }
-
-    preprocess_cell(args = candle.ArgumentStruct(**default_args))
+    preprocess_cell(args = default_args)
 
 
 if __name__ == '__main__':

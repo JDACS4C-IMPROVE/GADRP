@@ -8,25 +8,10 @@ import numpy as np
 import scipy.sparse as sp
 from scipy.sparse import coo_matrix
 
+from args import default_args
+
 # drug_sim
 from sklearn.preprocessing import MinMaxScaler
-drug_physicochemical_file = "../data/drug/269_dim_physicochemical.csv"
-drug_sim_top10_file = "../data/drug/drug_sim_top10.pt"
-drug_sim_file = "../data/drug/drug_sim.pt"
-cell_sim_top10_file = "../data/cell_line/cell_sim_top10.pt"
-cell_sim_file = "../data/cell_line/cell_sim.pt"
-
-# drug_cell_pair_index
-cell_index_file = "../data/cell_line/cell_index.csv"
-
-edge_idx_file = "../data/pair/edge_idx_file.pt"
-drug_cell_sim_file = "../data/pair/drug_cell_sim.pt"
-drug_cell_sim_matrix_txt = "../data/pair/drug_cell_sim_matrix.txt"
-drug_cell_sim_top100_index_file = "../data/pair/drug_cell_sim_top100_index.pt"
-
-drug_cell_label_file = "../data/pair/drug_cell_response.csv"
-drug_cell_label_index_file = "../data/pair/drug_cell_label.pt"
-
 
 # 计算药物和细胞系对的相似性矩阵
 def sym_adj(adj):
@@ -42,10 +27,19 @@ def sym_adj(adj):
     # toarray returns an ndarray; todense returns a matrix. If you want a matrix, use todense otherwise, use toarray
     return adj.dot(d_mat_inv_sqrt).transpose().dot(d_mat_inv_sqrt).astype(np.float32).tocoo()
 
-
-def main():
+def preprocess_drug_cell(args):
     device = "cuda"
     # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+    drug_sim_file = args.drug_sim_file
+    cell_sim_file = args.cell_sim_file
+    cell_index_file = args.cell_id_file
+    drug_index_file = args.drug_id_file
+    cell_sim_top10_file = args.cell_sim_top10_file
+    drug_sim_top10_file = args.drug_sim_top10_file
+    edge_idx_file = args.edge_idx_file
+    drug_cell_label_file = args.drug_cell_label_file
+    drug_cell_label_index_file = args.drug_cell_label_index_file
 
     #药物和细胞系的相似性矩阵
     drug_sim=torch.load(drug_sim_file).to(device)
@@ -53,17 +47,18 @@ def main():
     cell_sim=torch.load(cell_sim_file).to(device)
     cell_num=cell_sim.shape[0]
 
-    physicochemical_feature = pd.read_csv(drug_physicochemical_file, sep=',', header=0, index_col=[0])
-    drug_index = list(physicochemical_feature.index)
+    drug_index = pd.read_csv(drug_index_file, sep=',', header=None, index_col=[0])
+    drug_index = list(drug_index.index)
     cell_index=pd.read_csv(cell_index_file, sep=',', header=None, index_col=[0]).index
     drug_cell_pair_index=[]
     for i in range(drug_num):
         for j in range(cell_num):
-            pair_temp=[]
-            pair_temp.append(drug_index[i])
-            pair_temp.append(cell_index[j])
-            pair_temp.append(i)
-            pair_temp.append(j)
+            pair_temp=[
+                drug_index[i],
+                cell_index[j],
+                i,
+                j,
+            ]
             drug_cell_pair_index.append(pair_temp)
 
 
@@ -167,6 +162,8 @@ def main():
     drug_cell_label = torch.tensor(drug_cell_label).to(device)
     torch.save(drug_cell_label, drug_cell_label_index_file)
 
+def main():
+    preprocess_drug_cell(args = default_args)
 
 if __name__ == '__main__':
     main()
