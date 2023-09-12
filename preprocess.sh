@@ -5,7 +5,7 @@
 #!/bin/bash
 
 ### Path to your script inside the container that takes in data directory parameter###
-CANDLE_PREPROCESS=preprocess.py
+CANDLE_PREPROCESS=candle_preprocess.py
 
 if [[ "$#" -ne 1 ]] ; then
     echo "Illegal number of parameters"
@@ -16,10 +16,10 @@ fi
 CANDLE_DATA_DIR=$1
 
 # Command to run your scipt
-CMD="??? ${CANDLE_PREPROCESS}"
+CMD="python ${CANDLE_PREPROCESS}"
 
 # Name of your container
-echo "using container ???" # Put the name of your container here
+echo "using container GADRP" # Put the name of your container here
 
 # Displaying script parameters
 echo "using CANDLE_DATA_DIR ${CANDLE_DATA_DIR}"

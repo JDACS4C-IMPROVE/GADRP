@@ -14,29 +14,20 @@ from model.GADRP import GADRP_Net
 import torch.utils.data as Data
 import torch.optim as optim
 
+from tqdm import tqdm
 
-
-# drug
-drug_fingerprint_file= "./data/drug/881_dim_fingerprint.csv"
-# cell
-cell_index_file = "./data/cell_line/cell_index.csv"
-
-cell_RNAseq_ae="./data/cell_line/cell_RNAseq400_ae.pt"
-cell_copynumber_ae = "./data/cell_line/cell_copynumber400_ae.pt"
-
-# drug_cell pair
-edge_idx_file="./data/pair/edge_idx_file.pt"
-
-# label
-drug_cell_label_index_file = "./data/pair/drug_cell_label.pt"
-
-lr = 0.0001
-num_epoch =150
-batch_size =1024
+from preprocess.candle_original_defaults import default_args
+from cell_ae import prepare_ae
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-device = torch.device("cuda" if (torch.cuda.is_available()) else "cpu")
-def data_process():
+def data_process(args, device):
+    drug_fingerprint_file = args.drug_fingerprint_file
+    cell_index_file = args.cell_index_file
+    cell_RNAseq_ae = args.cell_rnaseq_ae
+    cell_copynumber_ae = args.cell_copynumber_ae
+    edge_idx_file = args.edge_idx_file
+    drug_cell_label_index_file = args.drug_cell_label_index_file
+
     # load molecular substructure fingerprints of drugs
     fingerprint = pd.read_csv(drug_fingerprint_file, sep=',', header=0, index_col=[0])
     fingerprint = torch.from_numpy(fingerprint.values).float().to(device)
@@ -54,7 +45,7 @@ def data_process():
              edge_idx, drug_cell_label
 
 
-def split(drug_cell_label, cell_num):
+def split(drug_cell_label, cell_num, device):
     """
     :param drug_cell_label:
     :param cell_index:
@@ -95,7 +86,7 @@ def split(drug_cell_label, cell_num):
 
 def training(model, drug_feature
              , cell_feature1, cell_feature2,
-             edge_idx, data_iter, features_test, labels_test):
+             edge_idx, data_iter, features_test, labels_test, lr, num_epoch):
     # loss function
     loss = nn.MSELoss()
     optimizer = optim.Adam(params=model.parameters(), lr=lr)
@@ -108,7 +99,7 @@ def training(model, drug_feature
     for epoch in range(1, num_epoch + 1):
         model.train()
         batch = 0
-        for X, y in data_iter:
+        for X, y in tqdm(data_iter):
             y_pre= model(drug_feature, cell_feature1, cell_feature2,
                          edge_idx, X)
             l = loss(y_pre, y.view(-1, 1))
@@ -133,17 +124,25 @@ def training(model, drug_feature
         if l_test.item() < best_test_loss.item():
             best_test_loss = torch.tensor(l_test.item())
 
+        # Add checkpoints
 
-def main():
-    random.seed(2)
+def train(args):
+    """This is deviation from original setup, allowing to call the original code
+    directly from CANDLE class with all the parameters, as well as from command
+    line with hardcoded settings. The goal is to keep original code as intact
+    as possible"""
+    random.seed(args.rng_seed)
+    device = torch.device(args.device)
+    batch_size = args.batch_size
+
     fingerprint, \
     cell_index,RNAseq_feature, copynumber_feature, \
-    edge_idx, drug_cell_label = data_process()
+    edge_idx, drug_cell_label = data_process(args, device)
 
 
 
     # Stratified sampling
-    train_index_all, test_index_all=split(drug_cell_label,cell_num=len(cell_index))
+    train_index_all, test_index_all=split(drug_cell_label,cell_num=len(cell_index),device=device)
 
     for i in range(5):
         train_index=train_index_all[i]
@@ -161,8 +160,15 @@ def main():
         model = GADRP_Net(device).to(device)
         training(model, fingerprint
                  , copynumber_feature,RNAseq_feature,
-                 edge_idx, data_iter, features_test, labels_test)
+                 edge_idx, data_iter, features_test, labels_test, lr=args.lr, num_epoch=args.epochs)
 
+def main():
+    args = default_args
+    print("Training autoencoders")
+    prepare_ae(args)
+
+    print("Training main network")
+    train(args)
 
 
 if __name__ == '__main__':

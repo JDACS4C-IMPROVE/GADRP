@@ -1,6 +1,5 @@
-from cell import calculate_similarity
-import candle
-from args import default_args
+from preprocess.utils import calculate_similarity
+from preprocess.candle_original_defaults import default_args
 
 drug_physicochemical_file = "../data/drug/269_dim_physicochemical.csv"
 drug_sim_file= "../data/drug/drug_sim.pt"

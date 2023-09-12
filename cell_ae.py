@@ -9,19 +9,14 @@ from sklearn.preprocessing import scale, MinMaxScaler
 import pandas as pd
 import torch.utils.data as Data
 import datetime
-# cell
-cell_index_file = "./data/cell_line/cell_index.csv"
-cell_RNAseq_file="./data/cell_line/RNAseq_462cell_48392dim.csv"
-cell_copynumber_file = "./data/cell_line/copynumber_461cell_23316dim.csv"
+from preprocess.candle_original_defaults import default_args
 
-cell_RNAseq_ae="./data/cell_line/cell_RNAseq400_ae.pt"
-cell_copynumber_ae="./data/cell_line/cell_copynumber400_ae.pt"
-device="cuda"
+# cell
 # os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
-def train_ae(model,trainLoader,test_feature):
+def train_ae(model,trainLoader,test_feature,autoencoder_lr):
     start = datetime.datetime.now()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=autoencoder_lr)
     loss_func = nn.MSELoss()
     best_model=model
     best_loss=100
@@ -45,10 +40,15 @@ def train_ae(model,trainLoader,test_feature):
             print('epoch:' ,epoch, 'train loss = ' ,train_loss.item(),"test loss:",test_loss.item(), "time:",(end - start).seconds)
     return best_model
 
-lr=0.0001
-batch_size=388
-def main():
-    random.seed(4)
+def prepare_ae(args):
+    random.seed(args.autoencoders_rng_seed)
+    device = torch.device(args.device)
+    cell_RNAseq_file = args.cell_RNAseq_file
+    cell_copynumber_file = args.cell_copynumber_file
+    cell_index_file = args.cell_id_file
+    cell_RNAseq_ae = args.cell_rnaseq_ae
+    cell_copynumber_ae = args.cell_copynumber_ae
+
     # load  gene expression data, and DNA copy number data of cell line
     RNAseq_feature = pd.read_csv(cell_RNAseq_file, sep=',', header=None, index_col=[0], skiprows=2)
     copynumber_feature = pd.read_csv(cell_copynumber_file, sep=',', header=None, index_col=[0], skiprows=5)
@@ -75,8 +75,8 @@ def main():
     test_list = [item for item in (RNAseq_feature).tolist() if item not in train_list]
     train=torch.tensor(train_list).float().to(device)
     test = torch.tensor(test_list).float().to(device)
-    data_iter = Data.DataLoader(train, batch_size, shuffle=True)
-    best_model=train_ae(RNAseq_ae,data_iter,test)
+    data_iter = Data.DataLoader(train, args.autoencoder_batch_size, shuffle=True)
+    best_model=train_ae(RNAseq_ae,data_iter,test,autoencoder_lr=args.autoencoder_lr)
     torch.save(best_model.output(RNAseq_feature),cell_RNAseq_ae)
 
     # dimension reduction(DNA copy number data)
@@ -85,13 +85,13 @@ def main():
     test_list = [item for item in (copynumber_feature).tolist() if item not in train_list]
     train = torch.tensor(train_list).float().to(device)
     test = torch.tensor(test_list).float().to(device)
-    data_iter = Data.DataLoader(train, batch_size, shuffle=True)
+    data_iter = Data.DataLoader(train, args.autoencoder_batch_size, shuffle=True)
     best_model = train_ae(copynumber_ae, data_iter, test)
     torch.save(best_model.output(copynumber_feature), cell_copynumber_ae)
 
 
-
-
+def main():
+    prepare_ae(default_args)
 
 if __name__ == '__main__':
     main()

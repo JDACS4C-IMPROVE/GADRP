@@ -8,7 +8,7 @@ import numpy as np
 import scipy.sparse as sp
 from scipy.sparse import coo_matrix
 
-from args import default_args
+from preprocess.candle_original_defaults import default_args
 
 # drug_sim
 from sklearn.preprocessing import MinMaxScaler
@@ -28,7 +28,7 @@ def sym_adj(adj):
     return adj.dot(d_mat_inv_sqrt).transpose().dot(d_mat_inv_sqrt).astype(np.float32).tocoo()
 
 def preprocess_drug_cell(args):
-    device = "cuda"
+    device = args.device
     # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
     drug_sim_file = args.drug_sim_file
@@ -76,7 +76,7 @@ def preprocess_drug_cell(args):
     cell_sim_top10_indexlist = cell_sim_top10_indexlist[list_cell].to(device)
     drug_cell_sim_index = drug_sim_top10_indexlist*cell_num + cell_sim_top10_indexlist
 
-    drug_j = (drug_cell_sim_index // cell_num).long()
+    drug_j = torch.div(drug_cell_sim_index, cell_num, rounding_mode='trunc').long()
     cell_j = (drug_cell_sim_index % cell_num).long()
     drug_i = torch.zeros_like(drug_j)
     cell_i = torch.zeros_like(cell_j)
@@ -115,7 +115,7 @@ def preprocess_drug_cell(args):
 
     drug_cell_label = pd.read_csv(drug_cell_label_file, sep=',', header=0, index_col=None,
                                   usecols=["ccle_name", "pubchem_cid", "ic50"])
-    # dropna 309933*31
+    # dropna 309933*3
     drug_cell_label = drug_cell_label.dropna(axis=0)
     print("after dropna:", drug_cell_label.shape)
 
