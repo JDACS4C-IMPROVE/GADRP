@@ -49,30 +49,22 @@ def prepare_ae(args):
     cell_RNAseq_ae = args.cell_rnaseq_ae
     cell_copynumber_ae = args.cell_copynumber_ae
 
-    # load  gene expression data, and DNA copy number data of cell line
-    RNAseq_feature = pd.read_csv(cell_RNAseq_file, sep=',', header=None, index_col=[0], skiprows=2)
-    copynumber_feature = pd.read_csv(cell_copynumber_file, sep=',', header=None, index_col=[0], skiprows=5)
-
     cell_index = pd.read_csv(cell_index_file, sep=',', header=None, index_col=[0])
-
-    RNAseq_feature = RNAseq_feature.loc[list(cell_index.index)].values
-    copynumber_feature = copynumber_feature.loc[list(cell_index.index)].values
 
     #normalization
     min_max = MinMaxScaler()
-    RNAseq_feature = torch.tensor(min_max.fit_transform(RNAseq_feature)).float().to(device)
-    copynumber_feature = torch.tensor(min_max.fit_transform(copynumber_feature)).float().to(device)
-
-
-    RNAseq_indim = RNAseq_feature.shape[-1]
-    copynumber_indim = copynumber_feature.shape[-1]
-    print(RNAseq_indim)
-    print(copynumber_indim)
 
     # dimension reduction(gene expression data)
     if os.path.exists(cell_RNAseq_ae):
         print('RNAseq autoencoder already computed')
     else:
+        print('Training RNAseq autoencoder')
+        RNAseq_feature = pd.read_csv(cell_RNAseq_file, sep=',', header=None, index_col=[0], skiprows=2)
+        RNAseq_feature = RNAseq_feature.loc[list(cell_index.index)].values
+        RNAseq_feature = torch.tensor(min_max.fit_transform(RNAseq_feature)).float().to(device)
+        RNAseq_indim = RNAseq_feature.shape[-1]
+        print(RNAseq_indim)
+
         RNAseq_ae = Auto_Encoder(device,RNAseq_indim, 400)
         train_list = random.sample((RNAseq_feature).tolist(), int(0.9 * len(RNAseq_feature)))
         test_list = [item for item in (RNAseq_feature).tolist() if item not in train_list]
@@ -84,8 +76,15 @@ def prepare_ae(args):
 
     # dimension reduction(DNA copy number data)
     if os.path.exists(cell_copynumber_ae):
-        print('Copy number autoencoder already computed')
+        print('Copy number autoencoder already trained')
     else:
+        print('Training copy number autoencoder')
+        copynumber_feature = pd.read_csv(cell_copynumber_file, sep=',', header=None, index_col=[0], skiprows=5)
+        copynumber_feature = copynumber_feature.loc[list(cell_index.index)].values
+        copynumber_feature = torch.tensor(min_max.fit_transform(copynumber_feature)).float().to(device)      
+        copynumber_indim = copynumber_feature.shape[-1]
+        print(copynumber_indim)
+
         copynumber_ae = Auto_Encoder(device,copynumber_indim, 400)
         train_list = random.sample((copynumber_feature).tolist(), int(0.9 * len(copynumber_feature)))
         test_list = [item for item in (copynumber_feature).tolist() if item not in train_list]

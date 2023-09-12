@@ -167,7 +167,7 @@ def train(args):
     prepare_ae(args)
 
     print("Training main network")
-    train(args)
+    train_main(args)
 
 def main():
     train(default_args)
