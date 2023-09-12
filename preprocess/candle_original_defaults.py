@@ -2,7 +2,7 @@ import candle
 
 default_args = candle.ArgumentStruct(**{
     # Autoencoder
-    'autoencoders_rng_seed': 4,
+    'autoencoder_rng_seed': 4,
     'autoencoder_lr': 0.0001,
     'autoencoder_batch_size': 388,
 

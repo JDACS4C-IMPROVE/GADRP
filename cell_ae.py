@@ -41,9 +41,9 @@ def train_ae(model,trainLoader,test_feature,autoencoder_lr):
     return best_model
 
 def prepare_ae(args):
-    random.seed(args.autoencoders_rng_seed)
+    random.seed(args.autoencoder_rng_seed)
     device = torch.device(args.device)
-    cell_RNAseq_file = args.cell_RNAseq_file
+    cell_RNAseq_file = args.cell_rnaseq_file
     cell_copynumber_file = args.cell_copynumber_file
     cell_index_file = args.cell_id_file
     cell_RNAseq_ae = args.cell_rnaseq_ae
@@ -70,24 +70,30 @@ def prepare_ae(args):
     print(copynumber_indim)
 
     # dimension reduction(gene expression data)
-    RNAseq_ae = Auto_Encoder(device,RNAseq_indim, 400)
-    train_list = random.sample((RNAseq_feature).tolist(), int(0.9 * len(RNAseq_feature)))
-    test_list = [item for item in (RNAseq_feature).tolist() if item not in train_list]
-    train=torch.tensor(train_list).float().to(device)
-    test = torch.tensor(test_list).float().to(device)
-    data_iter = Data.DataLoader(train, args.autoencoder_batch_size, shuffle=True)
-    best_model=train_ae(RNAseq_ae,data_iter,test,autoencoder_lr=args.autoencoder_lr)
-    torch.save(best_model.output(RNAseq_feature),cell_RNAseq_ae)
+    if os.path.exists(cell_RNAseq_ae):
+        print('RNAseq autoencoder already computed')
+    else:
+        RNAseq_ae = Auto_Encoder(device,RNAseq_indim, 400)
+        train_list = random.sample((RNAseq_feature).tolist(), int(0.9 * len(RNAseq_feature)))
+        test_list = [item for item in (RNAseq_feature).tolist() if item not in train_list]
+        train=torch.tensor(train_list).float().to(device)
+        test = torch.tensor(test_list).float().to(device)
+        data_iter = Data.DataLoader(train, args.autoencoder_batch_size, shuffle=True)
+        best_model=train_ae(RNAseq_ae,data_iter,test,autoencoder_lr=args.autoencoder_lr)
+        torch.save(best_model.output(RNAseq_feature),cell_RNAseq_ae)
 
     # dimension reduction(DNA copy number data)
-    copynumber_ae = Auto_Encoder(device,copynumber_indim, 400)
-    train_list = random.sample((copynumber_feature).tolist(), int(0.9 * len(copynumber_feature)))
-    test_list = [item for item in (copynumber_feature).tolist() if item not in train_list]
-    train = torch.tensor(train_list).float().to(device)
-    test = torch.tensor(test_list).float().to(device)
-    data_iter = Data.DataLoader(train, args.autoencoder_batch_size, shuffle=True)
-    best_model = train_ae(copynumber_ae, data_iter, test)
-    torch.save(best_model.output(copynumber_feature), cell_copynumber_ae)
+    if os.path.exists(cell_copynumber_ae):
+        print('Copy number autoencoder already computed')
+    else:
+        copynumber_ae = Auto_Encoder(device,copynumber_indim, 400)
+        train_list = random.sample((copynumber_feature).tolist(), int(0.9 * len(copynumber_feature)))
+        test_list = [item for item in (copynumber_feature).tolist() if item not in train_list]
+        train = torch.tensor(train_list).float().to(device)
+        test = torch.tensor(test_list).float().to(device)
+        data_iter = Data.DataLoader(train, args.autoencoder_batch_size, shuffle=True)
+        best_model = train_ae(copynumber_ae, data_iter, test, autoencoder_lr=args.autoencoder_lr)
+        torch.save(best_model.output(copynumber_feature), cell_copynumber_ae)
 
 
 def main():

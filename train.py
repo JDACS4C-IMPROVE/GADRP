@@ -126,7 +126,7 @@ def training(model, drug_feature
 
         # Add checkpoints
 
-def train(args):
+def train_main(args):
     """This is deviation from original setup, allowing to call the original code
     directly from CANDLE class with all the parameters, as well as from command
     line with hardcoded settings. The goal is to keep original code as intact
@@ -162,14 +162,15 @@ def train(args):
                  , copynumber_feature,RNAseq_feature,
                  edge_idx, data_iter, features_test, labels_test, lr=args.lr, num_epoch=args.epochs)
 
-def main():
-    args = default_args
+def train(args):
     print("Training autoencoders")
     prepare_ae(args)
 
     print("Training main network")
     train(args)
 
+def main():
+    train(default_args)
 
 if __name__ == '__main__':
     main()
