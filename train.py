@@ -18,6 +18,7 @@ from tqdm import tqdm
 
 from preprocess.candle_original_defaults import default_args
 from cell_ae import prepare_ae
+from candle import CandleCkptPyTorch
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 def data_process(args, device):
@@ -86,17 +87,23 @@ def split(drug_cell_label, cell_num, device):
 
 def training(model, drug_feature
              , cell_feature1, cell_feature2,
-             edge_idx, data_iter, features_test, labels_test, lr, num_epoch):
+             edge_idx, data_iter, features_test, labels_test, lr, num_epoch, ckpt):
     # loss function
     loss = nn.MSELoss()
     optimizer = optim.Adam(params=model.parameters(), lr=lr)
+
+    initial_epoch = 0
+    ckpt.set_model({'model':model, 'optimizer':optimizer})
+    J = ckpt.restart(model)
+    if J is not None:
+        initial_epoch = J["epoch"]
 
     train_ls, test_ls, test_pearson = [], [], []
     start = datetime.datetime.now()
     print(optimizer)
     best_test_loss = torch.tensor(100)
 
-    for epoch in range(1, num_epoch + 1):
+    for epoch in range(initial_epoch, num_epoch):
         model.train()
         batch = 0
         for X, y in tqdm(data_iter):
@@ -124,7 +131,7 @@ def training(model, drug_feature
         if l_test.item() < best_test_loss.item():
             best_test_loss = torch.tensor(l_test.item())
 
-        # Add checkpoints
+        ckpt.ckpt_epoch(epoch, l_test.item())
 
 def train_main(args):
     """This is deviation from original setup, allowing to call the original code
@@ -144,6 +151,8 @@ def train_main(args):
     # Stratified sampling
     train_index_all, test_index_all=split(drug_cell_label,cell_num=len(cell_index),device=device)
 
+    ckpt = CandleCkptPyTorch(vars(args))
+
     for i in range(5):
         train_index=train_index_all[i]
         test_index=test_index_all[i]
@@ -160,7 +169,9 @@ def train_main(args):
         model = GADRP_Net(device).to(device)
         training(model, fingerprint
                  , copynumber_feature,RNAseq_feature,
-                 edge_idx, data_iter, features_test, labels_test, lr=args.lr, num_epoch=args.epochs)
+                 edge_idx, data_iter, features_test, labels_test, lr=args.lr, num_epoch=args.epochs, ckpt=ckpt)
+
+        
 
 def train(args):
     print("Training autoencoders")
